@@ -85,31 +85,6 @@ impl MandelbrotBuilder {
     }
 }
 
-// pub struct Complex {
-//     real: f64,
-//     im: f64,
-// }
-
-// impl Complex {
-//     const ZERO: Complex = Complex { real: 0.0, im: 0.0 };
-
-//     pub fn new(real: f64, im: f64) -> Self {
-//         Self { im, real }
-//     }
-
-//     pub fn real(&self) -> f64 {
-//         self.real
-//     }
-
-//     pub fn im(&self) -> f64 {
-//         self.im
-//     }
-
-//     pub fn mag(&self) -> f64 {
-//         ((self.real).powi(2) + self.im.powi(2)).sqrt()
-//     }
-// }
-
 fn lerp_range(range: &Range<f64>, t: f64) -> f64 {
     assert!((0.0..=1.0).contains(&t));
     range.start + (range.end - range.start) * t

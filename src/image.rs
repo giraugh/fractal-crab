@@ -7,7 +7,6 @@ pub type RGBPixel = (u8, u8, u8);
 
 pub const WHITE: RGBPixel = (255, 255, 255);
 pub const BLACK: RGBPixel = (0, 0, 0);
-pub const BLUE: RGBPixel = (0, 0, 255);
 
 #[wasm_bindgen]
 pub struct Image {
