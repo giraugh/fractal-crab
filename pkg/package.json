@@ -1,0 +1,12 @@
+{
+  "name": "fractal-crab",
+  "version": "0.1.0",
+  "files": [
+    "fractal_crab_bg.wasm",
+    "fractal_crab.js",
+    "fractal_crab.d.ts"
+  ],
+  "module": "fractal_crab.js",
+  "types": "fractal_crab.d.ts",
+  "sideEffects": false
+}

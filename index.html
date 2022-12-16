@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Fractal Crab</title>
+	<style>
+		html,
+		body {
+			width: 100%;
+			margin: 0;
+			padding: 0;
+			background: #1b2c42;
+			font-family: "Open Sans", sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+		}
+
+		canvas {
+			image-rendering: crisp-edges;
+      max-width: min(80vw, 80vh);
+      border-radius: .2em;
+		}
+	</style>
+</head>
+
+<body>
+	<canvas id="canvas"></canvas>
+	<script type="module">
+		import init, { Image } from "./pkg/fractal_crab.js"
+		(async function main() {
+			// wait for wasm to be actually loaded
+			await init();
+
+      // Render a random image
+			let image = Image.mandelbrot(2000, 2000)
+			image.render_to_canvas("canvas")
+		})().catch(console.log)
+	</script>
+</body>
+
+</html>
