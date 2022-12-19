@@ -1,12 +1,15 @@
 use itertools::Itertools;
-use wasm_bindgen::{prelude::*, JsCast};
+use wasm_bindgen::{prelude::*, Clamped, JsCast};
 
-use crate::mandelbrot::MandelbrotBuilder;
+use crate::mandelbrot::FractalBuilder;
 
 pub type RGBPixel = (u8, u8, u8);
 
 pub const WHITE: RGBPixel = (255, 255, 255);
 pub const BLACK: RGBPixel = (0, 0, 0);
+// pub const BENJI_COL_2: RGBPixel = (218, 165, 32);
+// pub const BENJI_COL_1: RGBPixel = (72, 61, 139);
+// pub const BENJI_COL_3: RGBPixel = (75, 0, 130);
 
 #[wasm_bindgen]
 pub struct Image {
@@ -34,17 +37,31 @@ impl Image {
         }
     }
 
-    pub fn mandelbrot(width: usize, height: usize) -> Self {
+    pub fn fractal(width: usize, height: usize, real_range: Vec<f64>, im_range: Vec<f64>) -> Self {
         Self {
             width,
             height,
-            pixels: MandelbrotBuilder::new(width, height).render(),
+            pixels: FractalBuilder::new(width, height)
+                .real_range(real_range[0]..real_range[1])
+                .im_range(im_range[0]..im_range[1])
+                .render(),
         }
     }
 
-    // TODO: better error handling
+    pub fn rgba_array(&self) -> Vec<u8> {
+        self.pixels
+            .iter()
+            .flat_map(|&(r, g, b)| [r, g, b, 255])
+            .collect_vec()
+    }
+
+    pub fn image_data(self) -> web_sys::ImageData {
+        let data = self.rgba_array();
+        web_sys::ImageData::new_with_u8_clamped_array(Clamped(&data), self.width as u32).unwrap()
+    }
+
     /// Render the image to a canvas
-    pub fn render_to_canvas(&self, canvas_id: &str) {
+    pub fn render_to_canvas(self, canvas_id: &str) {
         // Get canvas
         let document = web_sys::window().unwrap().document().unwrap();
         let canvas = document.get_element_by_id(canvas_id).unwrap();
@@ -66,14 +83,7 @@ impl Image {
             .unwrap(); // can fail
 
         // Render pixels
-        for y in 0..self.height {
-            for x in 0..self.width {
-                let (r, g, b) = self.pixels[self.index(x, y)];
-                let fill = format!("rgb({r}, {g}, {b})");
-                ctx.set_fill_style(&JsValue::from_str(&fill));
-                ctx.fill_rect(x as _, y as _, 1.0, 1.0);
-            }
-        }
+        ctx.put_image_data(&self.image_data(), 0.0, 0.0).unwrap();
     }
 }
 

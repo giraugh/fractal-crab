@@ -2,7 +2,7 @@ use std::ops::Range;
 
 use derivative::Derivative;
 use itertools::Itertools;
-use num::{complex::ComplexFloat, Complex, Zero};
+use num::{complex::ComplexFloat, Complex};
 use wasm_bindgen::prelude::*;
 
 use super::image::RGBPixel;
@@ -11,7 +11,7 @@ use crate::image::{lerp_pixels, BLACK, WHITE};
 #[wasm_bindgen]
 #[derive(Debug, Derivative)]
 #[derivative(Default)]
-pub struct MandelbrotBuilder {
+pub struct FractalBuilder {
     width: usize,
     height: usize,
 
@@ -21,11 +21,13 @@ pub struct MandelbrotBuilder {
     #[derivative(Default(value = "(-1.0..1.0)"))]
     im_range: Range<f64>,
 
-    #[derivative(Default(value = "100"))]
+    #[derivative(Default(value = "200"))]
     iteration_limit: usize,
+
+    julia_constant: Option<Complex<f64>>,
 }
 
-impl MandelbrotBuilder {
+impl FractalBuilder {
     /// Create a new builder
     pub fn new(width: usize, height: usize) -> Self {
         Self {
@@ -45,8 +47,15 @@ impl MandelbrotBuilder {
         self
     }
 
+    pub fn julia_constant(mut self, julia_real: f64, julia_im: f64) -> Self {
+        self.julia_constant = Some(Complex::new(julia_real, julia_im));
+        self
+    }
+
     /// Render the mandelbrot image to RGB pixels
     pub fn render(&self) -> Vec<RGBPixel> {
+        let grad = colorgrad::sinebow();
+
         (0..self.width * self.height)
             .map(|i| {
                 // Normalise coordinates
@@ -56,16 +65,17 @@ impl MandelbrotBuilder {
                     (y as f64) / (self.height as f64),
                 );
 
-                // Construct c value
-                let c = Complex::new(
+                let mut z = Complex::new(
                     lerp_range(&self.real_range, u),
                     lerp_range(&self.im_range, v),
                 );
 
+                // Construct c value
+                let c = self.julia_constant.unwrap_or(z);
+
                 // Repeatedly perform z = z^2 + c
-                let mut z = Complex::<f64>::zero();
                 let mut iteration_count = 0;
-                while z.abs() < 2.0 {
+                while z.norm() < 2.0 {
                     // Staying bounded?
                     iteration_count += 1;
                     if iteration_count > self.iteration_limit {
@@ -74,12 +84,13 @@ impl MandelbrotBuilder {
                     }
 
                     // Keep going...
-                    z = z.powi(2) + c;
+                    z = (z * z) + c;
                 }
 
                 // This value (pixel) was not in the mandelbrot set, colour it appropriately
                 let t = (iteration_count as f64) / (self.iteration_limit as f64);
-                lerp_pixels(BLACK, WHITE, t)
+                let [r, g, b, _] = grad.at(t).to_rgba8();
+                (r, g, b)
             })
             .collect_vec()
     }

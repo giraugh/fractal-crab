@@ -11,31 +11,149 @@
 			background: #1b2c42;
 			font-family: "Open Sans", sans-serif;
       display: flex;
+			flex-direction: column;
       align-items: center;
       justify-content: center;
       min-height: 100vh;
+			color: white;
+		}
+
+		h1 {
+			margin-block-end: 0;
 		}
 
 		canvas {
 			image-rendering: crisp-edges;
       max-width: min(80vw, 80vh);
+			background: #111f31;
+			cursor: zoom-in;
+			display: block;
+		}
+
+		button {
+			margin-block-start: 1em;
+			padding: .5em 1.2em;
+		}
+
+		.canvas-wrapper {
       border-radius: .2em;
+			position: relative;
+			overflow: hidden;
+		}
+
+		.canvas-wrapper.loading {
+			transition: filter .5s;
+			filter: grayscale(.8);
+		}
+
+		.canvas-wrapper.loading > canvas {
+			cursor: progress;
+		}
+		
+		.canvas-wrapper:hover > #zoom-selection {
+			border: 2px solid #111f31;
+		}
+		
+		.canvas-wrapper:active > #zoom-selection {
+			opacity: 1;
+		}
+
+		#zoom-selection {
+			width: 50%;
+			height: 50%;
+			border: 2px solid transparent;
+			box-sizing: border-box;
+			position: absolute;
+			top: 0;
+			left: 0;
+			border-radius: .2rem;
+			pointer-events: none;
+			opacity: .2;
 		}
 	</style>
 </head>
 
 <body>
-	<canvas id="canvas"></canvas>
+	<h1>
+		🦀 Fractal Crab 🦀
+	</h1>
+	<p>
+		Use the mouse and click to zoom!
+	</p>
+	<div class="canvas-wrapper">
+		<canvas id="canvas" width="800" height="800"></canvas>
+		<div id="zoom-selection"></div>
+	</div>
+	<button id="reset">Reset zoom</button>
 	<script type="module">
 		import init, { Image } from "./pkg/fractal_crab.js"
 		(async function main() {
 			// wait for wasm to be actually loaded
-			await init();
-
-      // Render a random image
-			let image = Image.mandelbrot(2000, 2000)
-			image.render_to_canvas("canvas")
+			await init()
+			doRender()
 		})().catch(console.log)
+
+		let center = [-0.5, 0]
+		let scale = 2.7
+
+		const doRender = () => {
+      // Render a random image
+			let [real_range, im_range] = getBounds()
+			console.log('start')
+			canvasWrapper.classList.add('loading')
+			setTimeout(() => {
+				Image.fractal(800, 800, real_range, im_range).render_to_canvas("canvas")
+				canvasWrapper.classList.remove('loading')
+				console.log('end')
+			 }, 1)
+		}
+
+		const getBounds = () => {
+			let s = scale / 2
+			return [
+				[center[0] - s, center[0] + s],
+				[center[1] - s, center[1] + s],
+			]
+		}
+
+		// Listen for clicks on the canvas
+		const canvas = document.querySelector('canvas')
+		const canvasWrapper = document.querySelector('.canvas-wrapper')
+		const zoomSelection = document.querySelector('#zoom-selection')
+
+		canvas.addEventListener('mouseup', e => {
+			if (!canvasWrapper.classList.contains('loading')) {
+				const bb = canvas.getBoundingClientRect()
+				const [mx, my] = [e.clientX, e.clientY]
+				const [u, v] = [ (mx - bb.left)/bb.width, (my - bb.top)/bb.height ]
+				const [new_center, new_scale] = getZoomBox(u, v)
+				center = new_center
+				scale = new_scale
+				doRender()
+			}
+		})
+
+		canvas.addEventListener('mousemove', e => {
+			const bb = canvasWrapper.getBoundingClientRect()
+			const [x, y] = [e.clientX - bb.x, e.clientY - bb.y]
+			zoomSelection.style.left = (x - bb.width / 4) + 'px';
+			zoomSelection.style.top = (y - bb.height / 4) + 'px';
+		})
+
+		const getZoomBox = (u, v, mul = 0.5) => {
+			const [real_range, im_range] = getBounds()
+			const new_center = [(lerp(real_range[0], real_range[1], u)), lerp(im_range[0], im_range[1], v)]
+			const new_scale = scale * mul
+			return [new_center, new_scale]
+		}
+
+		const lerp = (a, b, t) => a + (b - a) * t
+
+		document.querySelector('#reset').addEventListener('click', () => {
+			center = [0, 0]
+			scale = 2
+			doRender()
+		})
 	</script>
 </body>
 
