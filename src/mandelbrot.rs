@@ -21,7 +21,7 @@ pub struct FractalBuilder {
     #[derivative(Default(value = "(-1.0..1.0)"))]
     im_range: Range<f64>,
 
-    #[derivative(Default(value = "200"))]
+    #[derivative(Default(value = "400"))]
     iteration_limit: usize,
 
     julia_constant: Option<Complex<f64>>,
