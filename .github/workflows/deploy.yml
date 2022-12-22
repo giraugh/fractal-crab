@@ -19,5 +19,13 @@ jobs:
       - name: Build WASM package
         run: wasm-pack build --target web
 
+      - name: Create deployment package
+        run: |
+          mkdir deployment
+          cp index.html deployment
+          cp -r pkg deployment
+
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: deployment
