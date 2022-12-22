@@ -8,18 +8,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout 🛎️
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-      - name: Install wasm pack
-        uses: icepuma/rust-action@master
-        with:
-          args: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh # Install wasm-pack
+      - name: Install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
-      - name: Install and Build 🔧 
-        run: |
-          cargo check
-          wasm-pack --target web
+      - name: Check rust validity
+        run: cargo check
+
+      - name: Build WASM package
+        run: wasm-pack build --target web
 
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@v4
