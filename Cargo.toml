@@ -14,7 +14,21 @@ js-sys = "0.3.60"
 rand = { version = "0.8.5" }
 getrandom = { version = "0.2", features = ["js"] }
 wasm-bindgen = "0.2"
-web-sys = { version = "0.3.60", features = ["CanvasRenderingContext2d", "Document", "Element", "HtmlCanvasElement", "Window", "ImageData"] }
 derivative = "2.2.0"
 num = "0.4.0"
 colorgrad = "0.6.2"
+
+[dependencies.web-sys]
+version = "0.3.6"
+features = [
+  'Document',
+  'Element',
+  'HtmlCanvasElement',
+  'WebGlBuffer',
+  'WebGlVertexArrayObject',
+  'WebGl2RenderingContext',
+  'WebGlUniformLocation',
+  'WebGlProgram',
+  'WebGlShader',
+  'Window',
+]

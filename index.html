@@ -16,6 +16,7 @@
       justify-content: center;
       min-height: 100vh;
 			color: white;
+			overscroll-behavior-x: none;
 		}
 
 		h1 {
@@ -28,6 +29,7 @@
 			background: #111f31;
 			cursor: zoom-in;
 			display: block;
+			touch-action: none;
 		}
 
 		button {
@@ -82,78 +84,61 @@
 	</p>
 	<div class="canvas-wrapper">
 		<canvas id="canvas" width="800" height="800"></canvas>
-		<div id="zoom-selection"></div>
 	</div>
 	<button id="reset">Reset zoom</button>
 	<script type="module">
-		import init, { Image } from "./pkg/fractal_crab.js"
+		import init, { FractalCanvas } from "./pkg/fractal_crab.js"
 		(async function main() {
+			const canvas = document.querySelector('#canvas')
+			const boundingBox = canvas.getBoundingClientRect()
+			canvas.width = boundingBox.width// * devicePixelRatio
+			canvas.height = boundingBox.height// * devicePixelRatio
+
 			// wait for wasm to be actually loaded
 			await init()
-			doRender()
-		})().catch(console.log)
-
-		let center = [-0.5, 0]
-		let scale = 2.7
-
-		const doRender = () => {
-      // Render a random image
-			let [real_range, im_range] = getBounds()
-			console.log('start')
-			canvasWrapper.classList.add('loading')
-			setTimeout(() => {
-				Image.fractal(800, 800, real_range, im_range).render_to_canvas("canvas")
-				canvasWrapper.classList.remove('loading')
-				console.log('end')
-			 }, 1)
-		}
-
-		const getBounds = () => {
-			let s = scale / 2
-			return [
-				[center[0] - s, center[0] + s],
-				[center[1] - s, center[1] + s],
-			]
-		}
-
-		// Listen for clicks on the canvas
-		const canvas = document.querySelector('canvas')
-		const canvasWrapper = document.querySelector('.canvas-wrapper')
-		const zoomSelection = document.querySelector('#zoom-selection')
-
-		canvas.addEventListener('mouseup', e => {
-			if (!canvasWrapper.classList.contains('loading')) {
-				const bb = canvas.getBoundingClientRect()
-				const [mx, my] = [e.clientX, e.clientY]
-				const [u, v] = [ (mx - bb.left)/bb.width, (my - bb.top)/bb.height ]
-				const [new_center, new_scale] = getZoomBox(u, v)
-				center = new_center
-				scale = new_scale
-				doRender()
+			const fractalCanvas = FractalCanvas.from_canvas(canvas)
+		
+			const loop = () => {
+				fractalCanvas.draw()
+				requestAnimationFrame(loop)
 			}
-		})
+			
+			window.addEventListener('wheel', e => {
+				e.preventDefault()
+				fractalCanvas.zoom_view(-e.deltaY / 1000)
+			}, { passive: false })
+			
+			let isDragging = false
+			let previousPosition = null
+			const moveSpeed = 0.002
+			window.addEventListener('pointerdown', e => {
+				e.preventDefault()
+				isDragging = true
+			})
+			window.addEventListener('pointerup', e => {
+				e.preventDefault()
+				isDragging = false
+				previousPosition = null
+			})
+			window.addEventListener('pointercancel', e => {
+				e.preventDefault()
+				isDragging = false
+				previousPosition = null
+			})
+			window.addEventListener('pointermove', e => {
+				e.preventDefault()
+				if (isDragging) {
+					if (previousPosition) {
+						let [dx, dy] = [e.clientX - previousPosition[0], e.clientY - previousPosition[1]]
+						fractalCanvas.move_view(dx * -moveSpeed, dy * -moveSpeed)
+					}	
+				}
+				previousPosition = [e.clientX, e.clientY]
+			})
 
-		canvas.addEventListener('mousemove', e => {
-			const bb = canvasWrapper.getBoundingClientRect()
-			const [x, y] = [e.clientX - bb.x, e.clientY - bb.y]
-			zoomSelection.style.left = (x - bb.width / 4) + 'px';
-			zoomSelection.style.top = (y - bb.height / 4) + 'px';
-		})
+			loop()
 
-		const getZoomBox = (u, v, mul = 0.5) => {
-			const [real_range, im_range] = getBounds()
-			const new_center = [(lerp(real_range[0], real_range[1], u)), lerp(im_range[0], im_range[1], v)]
-			const new_scale = scale * mul
-			return [new_center, new_scale]
-		}
-
-		const lerp = (a, b, t) => a + (b - a) * t
-
-		document.querySelector('#reset').addEventListener('click', () => {
-			center = [-0.5, 0]
-			scale = 2.7
-			doRender()
-		})
+		})().catch(err => console.error('Error', err))
 	</script>
 </body>
 
