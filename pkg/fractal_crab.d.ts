@@ -2,58 +2,39 @@
 /* eslint-disable */
 /**
 */
-export class FractalBuilder {
-  free(): void;
-}
-/**
-*/
-export class Image {
+export class FractalCanvas {
   free(): void;
 /**
-* Generate a new image with random black/white pixels
-* @param {number} width
-* @param {number} height
-* @returns {Image}
+* @param {HTMLCanvasElement} canvas
+* @returns {FractalCanvas}
 */
-  static random(width: number, height: number): Image;
+  static from_canvas(canvas: HTMLCanvasElement): FractalCanvas;
 /**
-* @param {number} width
-* @param {number} height
-* @param {Float64Array} real_range
-* @param {Float64Array} im_range
-* @returns {Image}
+* @param {number} x_off
+* @param {number} y_off
 */
-  static fractal(width: number, height: number, real_range: Float64Array, im_range: Float64Array): Image;
+  move_view(x_off: number, y_off: number): void;
 /**
-* @returns {Uint8Array}
+* @param {number} factor
 */
-  rgba_array(): Uint8Array;
+  zoom_view(factor: number): void;
 /**
-* @returns {ImageData}
 */
-  image_data(): ImageData;
-/**
-* Render the image to a canvas
-* @param {string} canvas_id
-*/
-  render_to_canvas(canvas_id: string): void;
+  draw(): void;
 }
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
 
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
-  readonly __wbg_image_free: (a: number) => void;
-  readonly image_random: (a: number, b: number) => number;
-  readonly image_fractal: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
-  readonly image_rgba_array: (a: number, b: number) => void;
-  readonly image_image_data: (a: number) => number;
-  readonly image_render_to_canvas: (a: number, b: number, c: number) => void;
-  readonly __wbg_fractalbuilder_free: (a: number) => void;
+  readonly __wbg_fractalcanvas_free: (a: number) => void;
+  readonly fractalcanvas_from_canvas: (a: number, b: number) => void;
+  readonly fractalcanvas_move_view: (a: number, b: number, c: number) => void;
+  readonly fractalcanvas_zoom_view: (a: number, b: number) => void;
+  readonly fractalcanvas_draw: (a: number) => void;
+  readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
   readonly __wbindgen_malloc: (a: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number) => number;
-  readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
-  readonly __wbindgen_free: (a: number, b: number) => void;
   readonly __wbindgen_exn_store: (a: number) => void;
 }
 
