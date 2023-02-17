@@ -10,6 +10,19 @@ export class FractalCanvas {
 */
   static from_canvas(canvas: HTMLCanvasElement): FractalCanvas;
 /**
+* @returns {Float64Array}
+*/
+  get_view_centre(): Float64Array;
+/**
+* @param {Float32Array | undefined} julia_const
+*/
+  set_julia_constant_at(julia_const?: Float32Array): void;
+/**
+* @param {number} width
+* @param {number} height
+*/
+  resize_viewport(width: number, height: number): void;
+/**
 * @param {number} x_off
 * @param {number} y_off
 */
@@ -29,10 +42,14 @@ export interface InitOutput {
   readonly memory: WebAssembly.Memory;
   readonly __wbg_fractalcanvas_free: (a: number) => void;
   readonly fractalcanvas_from_canvas: (a: number, b: number) => void;
+  readonly fractalcanvas_get_view_centre: (a: number, b: number) => void;
+  readonly fractalcanvas_set_julia_constant_at: (a: number, b: number, c: number) => void;
+  readonly fractalcanvas_resize_viewport: (a: number, b: number, c: number) => void;
   readonly fractalcanvas_move_view: (a: number, b: number, c: number) => void;
   readonly fractalcanvas_zoom_view: (a: number, b: number) => void;
   readonly fractalcanvas_draw: (a: number) => void;
   readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
+  readonly __wbindgen_free: (a: number, b: number) => void;
   readonly __wbindgen_malloc: (a: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number) => number;
   readonly __wbindgen_exn_store: (a: number) => void;
