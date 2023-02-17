@@ -7,8 +7,9 @@ pub struct FractalCanvas {
     context: WebGl2RenderingContext,
     program: WebGlProgram,
     tri_count: usize,
-    view_min: [f64; 2],
-    view_max: [f64; 2],
+    view_centre: [f64; 2],
+    view_size: f64,
+    julia_const: Option<[f32; 2]>,
 }
 
 #[wasm_bindgen]
@@ -81,31 +82,40 @@ impl FractalCanvas {
             context,
             program,
             tri_count: vertices.len() / 3,
-            view_max: [-2.0, -1.3],
-            view_min: [0.8, 1.3],
+            view_centre: [-0.5, 0.0],
+            view_size: 1.2,
+            julia_const: None, // Some([0.4, 0.3]),
         })
     }
 
+    pub fn get_view_centre(&self) -> Vec<f64> {
+        Vec::from_iter(self.view_centre.iter().cloned())
+    }
+
+    pub fn set_julia_constant_at(&mut self, julia_const: Option<Vec<f32>>) {
+        self.julia_const = julia_const.map(|c| {
+            [
+                self.view_centre[0] as f32
+                    + lerp(-self.view_size, self.view_size, c[0] as f64) as f32,
+                self.view_centre[1] as f32
+                    + lerp(self.view_size, -self.view_size, c[1] as f64) as f32,
+            ]
+        })
+    }
+
+    pub fn resize_viewport(&self, width: i32, height: i32) {
+        self.context.viewport(0, 0, width, height);
+    }
+
     pub fn move_view(&mut self, x_off: f64, y_off: f64) {
-        let view_width = (self.view_max[0] - self.view_min[0]).abs();
-        let view_height = (self.view_max[1] - self.view_min[1]).abs();
-        let x_delta = x_off * view_width;
-        let y_delta = y_off * view_height;
-        self.view_min = [self.view_min[0] + x_delta, self.view_min[1] + y_delta];
-        self.view_max = [self.view_max[0] + x_delta, self.view_max[1] + y_delta];
+        self.view_centre = [
+            self.view_centre[0] + self.view_size * x_off,
+            self.view_centre[1] + self.view_size * y_off,
+        ];
     }
 
     pub fn zoom_view(&mut self, factor: f64) {
-        let mid_x = (self.view_min[0] + self.view_max[0]) / 2.0;
-        let mid_y = (self.view_min[1] + self.view_max[1]) / 2.0;
-        self.view_min = [
-            lerp(self.view_min[0], mid_x, factor),
-            lerp(self.view_min[1], mid_y, factor),
-        ];
-        self.view_max = [
-            lerp(self.view_max[0], mid_x, factor),
-            lerp(self.view_max[1], mid_y, factor),
-        ];
+        self.view_size += factor * self.view_size;
     }
 
     pub fn draw(&self) {
@@ -114,13 +124,25 @@ impl FractalCanvas {
             .context
             .get_uniform_location(&self.program, "uResolution")
             .unwrap();
-        let view_min_uniform_location = self
+        let view_centre_x_uniform_location = self
             .context
-            .get_uniform_location(&self.program, "uViewMin")
+            .get_uniform_location(&self.program, "uViewCentreX")
             .unwrap();
-        let view_max_uniform_location = self
+        let view_centre_y_uniform_location = self
             .context
-            .get_uniform_location(&self.program, "uViewMax")
+            .get_uniform_location(&self.program, "uViewCentreY")
+            .unwrap();
+        let view_size_uniform_location = self
+            .context
+            .get_uniform_location(&self.program, "uViewSize")
+            .unwrap();
+        let use_julia_const_uniform_location = self
+            .context
+            .get_uniform_location(&self.program, "uUseJuliaConstant")
+            .unwrap();
+        let julia_const_uniform_location = self
+            .context
+            .get_uniform_location(&self.program, "uJuliaConstant")
             .unwrap();
 
         // Set uniforms
@@ -130,12 +152,27 @@ impl FractalCanvas {
         );
 
         // Set view region uniforms
-        let vmin = [self.view_min[0] as f32, self.view_min[1] as f32];
-        let vmax = [self.view_max[0] as f32, self.view_max[1] as f32];
-        self.context
-            .uniform2fv_with_f32_array(Some(&view_min_uniform_location), &vmin);
-        self.context
-            .uniform2fv_with_f32_array(Some(&view_max_uniform_location), &vmax);
+        self.context.uniform2fv_with_f32_array(
+            Some(&view_centre_x_uniform_location),
+            &split_double(self.view_centre[0]),
+        );
+        self.context.uniform2fv_with_f32_array(
+            Some(&view_centre_y_uniform_location),
+            &split_double(self.view_centre[1]),
+        );
+        self.context.uniform2fv_with_f32_array(
+            Some(&view_size_uniform_location),
+            &split_double(self.view_size),
+        );
+
+        self.context.uniform1i(
+            Some(&use_julia_const_uniform_location),
+            self.julia_const.is_some() as i32,
+        );
+        if let Some(julia_const) = self.julia_const {
+            self.context
+                .uniform2fv_with_f32_array(Some(&julia_const_uniform_location), &julia_const);
+        }
 
         // Clear canvas
         self.context.clear_color(0.0, 0.0, 0.0, 1.0);
@@ -145,6 +182,12 @@ impl FractalCanvas {
         self.context
             .draw_arrays(WebGl2RenderingContext::TRIANGLES, 0, self.tri_count as i32);
     }
+}
+
+pub fn split_double(x: f64) -> [f32; 2] {
+    let x1 = x as f32;
+    let x2 = (x - (x1 as f64)) as f32;
+    [x1, x2]
 }
 
 pub fn compile_shader(

@@ -27,7 +27,7 @@
 			image-rendering: crisp-edges;
       max-width: min(80vw, 80vh);
 			background: #111f31;
-			cursor: zoom-in;
+			cursor: grab;
 			display: block;
 			touch-action: none;
 		}
@@ -72,6 +72,16 @@
 			pointer-events: none;
 			opacity: .2;
 		}
+
+		.options {
+			margin-block: .5em;
+			margin-block-end: 1em;
+			display: flex;
+		}
+
+		.status {
+			opacity: .5;
+		}
 	</style>
 </head>
 
@@ -80,38 +90,63 @@
 		🦀 Fractal Crab 🦀
 	</h1>
 	<p>
-		Use the mouse and click to zoom!
+		Drag and zoom to explore the fractal. Hold <kbd>space</kbd> to preview julia set. Press <kbd>J</kbd> to lock in julia set.
 	</p>
+	<div class="options">
+		<label>
+			Retina
+			<input id="retina" type="checkbox" />
+		</label>
+	</div>
+	<div class="status">
+		Current view centered at <strong id="position-label"></strong>
+	</div>
 	<div class="canvas-wrapper">
 		<canvas id="canvas" width="800" height="800"></canvas>
 	</div>
-	<button id="reset">Reset zoom</button>
 	<script type="module">
 		import init, { FractalCanvas } from "./pkg/fractal_crab.js"
 		(async function main() {
 			const canvas = document.querySelector('#canvas')
-			const boundingBox = canvas.getBoundingClientRect()
-			canvas.width = boundingBox.width// * devicePixelRatio
-			canvas.height = boundingBox.height// * devicePixelRatio
+			const positionLabel = document.querySelector('#position-label')
+
+			let fractalCanvas; 
+
+			let useRetina = false
+			const resizeCanvas = () => {
+				const boundingBox = canvas.getBoundingClientRect()
+				canvas.width = boundingBox.width * (useRetina ? devicePixelRatio : 1)
+				canvas.height = boundingBox.height * (useRetina ? devicePixelRatio : 1)
+				if (fractalCanvas) fractalCanvas.resize_viewport(canvas.width, canvas.height)
+			}
+			resizeCanvas()
+
+			const updatePositionLabels = () => {
+				const viewCentre = fractalCanvas.get_view_centre()
+				positionLabel.innerHTML = `${String(viewCentre[0]).padEnd(25, '0')}${viewCentre[1] < 0 ? "" : "+"}${String(viewCentre[1]).padEnd(25, '0')}i`
+			}
 
 			// wait for wasm to be actually loaded
 			await init()
-			const fractalCanvas = FractalCanvas.from_canvas(canvas)
-		
+			fractalCanvas	= FractalCanvas.from_canvas(canvas)	
+
 			const loop = () => {
 				fractalCanvas.draw()
 				requestAnimationFrame(loop)
 			}
 			
-			window.addEventListener('wheel', e => {
+			canvas.addEventListener('wheel', e => {
 				e.preventDefault()
-				fractalCanvas.zoom_view(-e.deltaY / 1000)
+				fractalCanvas.zoom_view(e.deltaY / 1000)
+				updatePositionLabels()
 			}, { passive: false })
 			
 			let isDragging = false
 			let previousPosition = null
-			const moveSpeed = 0.002
-			window.addEventListener('pointerdown', e => {
+			let showJuliaPreview = false
+			let juliaMode = false
+			const moveSpeed = 0.003
+			canvas.addEventListener('pointerdown', e => {
 				e.preventDefault()
 				isDragging = true
 			})
@@ -125,18 +160,57 @@
 				isDragging = false
 				previousPosition = null
 			})
-			window.addEventListener('pointermove', e => {
+			canvas.addEventListener('pointermove', e => {
 				e.preventDefault()
-				if (isDragging) {
-					if (previousPosition) {
-						let [dx, dy] = [e.clientX - previousPosition[0], e.clientY - previousPosition[1]]
-						fractalCanvas.move_view(dx * -moveSpeed, dy * -moveSpeed)
-					}	
-				}
+				if (previousPosition) {
+					let bb = canvas.getBoundingClientRect()
+					let [dx, dy] = [e.clientX - previousPosition[0], e.clientY - previousPosition[1]]
+					let [x, y] = [(previousPosition[0] - bb.left)/bb.width, (previousPosition[1] - bb.top)/bb.height]
+					if (isDragging) {
+						fractalCanvas.move_view(dx * -moveSpeed, dy * moveSpeed)
+						updatePositionLabels()
+					}
+					if (showJuliaPreview)
+						fractalCanvas.set_julia_constant_at([x, y])	
+				}	
 				previousPosition = [e.clientX, e.clientY]
+			})
+			window.addEventListener('keydown', e => {
+				if (e.code === 'Space' && !juliaMode) {
+					e.preventDefault()
+					showJuliaPreview = true
+				}
+				if (e.code === 'KeyJ') {
+					e.preventDefault()
+					if (!juliaMode) {
+						if (previousPosition) {
+							showJuliaPreview = false
+							juliaMode = true
+							let bb = canvas.getBoundingClientRect()
+							let [x, y] = [(previousPosition[0] - bb.left)/bb.width, (previousPosition[1] - bb.top)/bb.height]
+							fractalCanvas.set_julia_constant_at([x, y])	
+						}
+					} else {
+						juliaMode = false
+						fractalCanvas.set_julia_constant_at(null)	
+					}
+				}
+			})
+			window.addEventListener('keyup', e => {
+				if (e.code === 'Space') {
+					if (showJuliaPreview) {
+						showJuliaPreview = false
+						fractalCanvas.set_julia_constant_at(null)	
+					}
+				}
 			})
 
 			loop()
+
+			document.querySelector('input#retina').addEventListener('change', e => {
+				useRetina = e.target.checked
+				resizeCanvas()
+			})
 
 		})().catch(err => console.error('Error', err))
 	</script>
