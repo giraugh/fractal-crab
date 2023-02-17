@@ -92,6 +92,11 @@ impl FractalCanvas {
         Vec::from_iter(self.view_centre.iter().cloned())
     }
 
+    pub fn get_julia_constant(&self) -> Option<Vec<f32>> {
+        self.julia_const
+            .map(|jc| Vec::from_iter(jc.iter().cloned()))
+    }
+
     pub fn set_julia_constant_at(&mut self, julia_const: Option<Vec<f32>>) {
         self.julia_const = julia_const.map(|c| {
             [
