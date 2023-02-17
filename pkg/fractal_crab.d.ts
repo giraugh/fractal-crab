@@ -14,6 +14,10 @@ export class FractalCanvas {
 */
   get_view_centre(): Float64Array;
 /**
+* @returns {Float32Array | undefined}
+*/
+  get_julia_constant(): Float32Array | undefined;
+/**
 * @param {Float32Array | undefined} julia_const
 */
   set_julia_constant_at(julia_const?: Float32Array): void;
@@ -43,6 +47,7 @@ export interface InitOutput {
   readonly __wbg_fractalcanvas_free: (a: number) => void;
   readonly fractalcanvas_from_canvas: (a: number, b: number) => void;
   readonly fractalcanvas_get_view_centre: (a: number, b: number) => void;
+  readonly fractalcanvas_get_julia_constant: (a: number, b: number) => void;
   readonly fractalcanvas_set_julia_constant_at: (a: number, b: number, c: number) => void;
   readonly fractalcanvas_resize_viewport: (a: number, b: number, c: number) => void;
   readonly fractalcanvas_move_view: (a: number, b: number, c: number) => void;

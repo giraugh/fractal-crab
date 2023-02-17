@@ -77,6 +77,10 @@ function getFloat32Memory0() {
     return cachedFloat32Memory0;
 }
 
+function getArrayF32FromWasm0(ptr, len) {
+    return getFloat32Memory0().subarray(ptr / 4, ptr / 4 + len);
+}
+
 let WASM_VECTOR_LEN = 0;
 
 function passArrayF32ToWasm0(arg, malloc) {
@@ -88,10 +92,6 @@ function passArrayF32ToWasm0(arg, malloc) {
 
 function isLikeNone(x) {
     return x === undefined || x === null;
-}
-
-function getArrayF32FromWasm0(ptr, len) {
-    return getFloat32Memory0().subarray(ptr / 4, ptr / 4 + len);
 }
 
 const cachedTextEncoder = new TextEncoder('utf-8');
@@ -206,6 +206,25 @@ export class FractalCanvas {
             var r1 = getInt32Memory0()[retptr / 4 + 1];
             var v0 = getArrayF64FromWasm0(r0, r1).slice();
             wasm.__wbindgen_free(r0, r1 * 8);
+            return v0;
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
+    }
+    /**
+    * @returns {Float32Array | undefined}
+    */
+    get_julia_constant() {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.fractalcanvas_get_julia_constant(retptr, this.ptr);
+            var r0 = getInt32Memory0()[retptr / 4 + 0];
+            var r1 = getInt32Memory0()[retptr / 4 + 1];
+            let v0;
+            if (r0 !== 0) {
+                v0 = getArrayF32FromWasm0(r0, r1).slice();
+                wasm.__wbindgen_free(r0, r1 * 4);
+            }
             return v0;
         } finally {
             wasm.__wbindgen_add_to_stack_pointer(16);

@@ -82,6 +82,10 @@
 		.status {
 			opacity: .5;
 		}
+
+		#julia-span:not(.show) {
+			display: none;
+		}
 	</style>
 </head>
 
@@ -99,7 +103,8 @@
 		</label>
 	</div>
 	<div class="status">
-		Current view centered at <strong id="position-label"></strong>
+		<div>Current view centered at <strong id="position-label"></strong></div>
+		<div id="julia-span">Julia constant locked in at <strong id="julia-label"></strong></div>
 	</div>
 	<div class="canvas-wrapper">
 		<canvas id="canvas" width="800" height="800"></canvas>
@@ -109,6 +114,8 @@
 		(async function main() {
 			const canvas = document.querySelector('#canvas')
 			const positionLabel = document.querySelector('#position-label')
+			const juliaLabel = document.querySelector('#julia-label')
+			const juliaSpan = document.querySelector('#julia-span')
 
 			let fractalCanvas; 
 
@@ -120,11 +127,6 @@
 				if (fractalCanvas) fractalCanvas.resize_viewport(canvas.width, canvas.height)
 			}
 			resizeCanvas()
-
-			const updatePositionLabels = () => {
-				const viewCentre = fractalCanvas.get_view_centre()
-				positionLabel.innerHTML = `${String(viewCentre[0]).padEnd(25, '0')}${viewCentre[1] < 0 ? "" : "+"}${String(viewCentre[1]).padEnd(25, '0')}i`
-			}
 
 			// wait for wasm to be actually loaded
 			await init()
@@ -146,6 +148,22 @@
 			let showJuliaPreview = false
 			let juliaMode = false
 			const moveSpeed = 0.003
+
+			const formatImaginaryNum = (x, y) =>
+				`${String(x).padEnd(25, '0')}${y < 0 ? "" : "+"}${String(y).padEnd(25, '0')}i`
+
+			const updatePositionLabels = () => {
+				const viewCentre = fractalCanvas.get_view_centre()
+				positionLabel.innerHTML = formatImaginaryNum(...viewCentre)
+				if (juliaMode) {
+					const juliaConst = fractalCanvas.get_julia_constant()
+					juliaLabel.innerHTML = formatImaginaryNum(...juliaConst)
+					juliaSpan.classList.add('show')
+				} else {
+					juliaSpan.classList.remove('show')
+				}
+			}
+
 			canvas.addEventListener('pointerdown', e => {
 				e.preventDefault()
 				isDragging = true
@@ -194,6 +212,7 @@
 						juliaMode = false
 						fractalCanvas.set_julia_constant_at(null)	
 					}
+					updatePositionLabels()
 				}
 			})
 			window.addEventListener('keyup', e => {
@@ -206,6 +225,7 @@
 			})
 
 			loop()
+			updatePositionLabels()
 
 			document.querySelector('input#retina').addEventListener('change', e => {
 				useRetina = e.target.checked
